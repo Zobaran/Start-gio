@@ -2,8 +2,8 @@
 
 import type { ResumeData } from "./ResumeChatScreen";
 
-function splitSkills(skills: string): string[] {
-  return skills
+function splitList(value: string): string[] {
+  return value
     .split(/[,;]/)
     .map((s) => s.trim())
     .filter(Boolean);
@@ -24,17 +24,61 @@ function slugify(name: string): string {
 function buildResumeText(data: ResumeData): string {
   return [
     data.name,
-    data.area,
+    data.bio,
+    "",
+    "OBJETIVO",
+    data.objective,
     "",
     "FORMAÇÃO ACADÊMICA",
     data.education,
     "",
-    "HABILIDADES",
-    splitSkills(data.skills).join(", "),
+    "EXPERIÊNCIA PROFISSIONAL",
+    data.experience,
     "",
-    "SOBRE MIM",
-    data.bio,
+    "PRINCIPAIS CONQUISTAS",
+    data.achievements,
+    "",
+    "HABILIDADES TÉCNICAS",
+    splitList(data.technicalSkills).join(", "),
+    "",
+    "HABILIDADES COMPORTAMENTAIS",
+    splitList(data.softSkills).join(", "),
+    "",
+    "IDIOMAS",
+    splitList(data.languages).join(", "),
   ].join("\n");
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mb-5">
+      <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-navy-lighter">
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+function ChipList({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item}
+          className="rounded-full border-2 border-orange/40 bg-orange/10 px-3 py-1 text-xs font-semibold text-orange-dark"
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 export default function ResumeResultScreen({
@@ -81,39 +125,46 @@ export default function ResumeResultScreen({
         <div className="mx-auto w-full max-w-md">
           <div className="rounded-2xl bg-foreground px-6 py-7 text-navy shadow-xl">
             <h2 className="text-2xl font-extrabold">{data.name}</h2>
-            <p className="mb-5 font-semibold text-orange-dark">{data.area}</p>
-
-            <div className="mb-5">
-              <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-navy-lighter">
-                Formação acadêmica
-              </h3>
-              <p className="text-sm leading-relaxed">{data.education}</p>
-            </div>
-
-            <div className="mb-5">
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-navy-lighter">
-                Habilidades
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {splitSkills(data.skills).map((skill) => (
-                  <span
-                    key={skill}
-                    className="rounded-full border-2 border-orange/40 bg-orange/10 px-3 py-1 text-xs font-semibold text-orange-dark"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-navy-lighter">
-                Sobre mim
-              </h3>
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {data.bio && (
+              <p className="mb-5 text-sm leading-relaxed text-navy-lighter">
                 {data.bio}
               </p>
-            </div>
+            )}
+
+            <Section title="Objetivo">
+              <p className="text-sm leading-relaxed">{data.objective}</p>
+            </Section>
+
+            <Section title="Formação acadêmica">
+              <p className="text-sm leading-relaxed">{data.education}</p>
+            </Section>
+
+            <Section title="Experiência profissional">
+              <p className="text-sm leading-relaxed">{data.experience}</p>
+              {data.achievements && (
+                <p className="mt-2 text-sm leading-relaxed">
+                  <span className="font-semibold">Conquistas: </span>
+                  {data.achievements}
+                </p>
+              )}
+            </Section>
+
+            <Section title="Habilidades">
+              <p className="mb-1 text-xs font-semibold text-navy-lighter">
+                Técnicas
+              </p>
+              <div className="mb-3">
+                <ChipList items={splitList(data.technicalSkills)} />
+              </div>
+              <p className="mb-1 text-xs font-semibold text-navy-lighter">
+                Comportamentais
+              </p>
+              <ChipList items={splitList(data.softSkills)} />
+            </Section>
+
+            <Section title="Idiomas">
+              <ChipList items={splitList(data.languages)} />
+            </Section>
           </div>
 
           <div className="mt-6 flex flex-col gap-3">

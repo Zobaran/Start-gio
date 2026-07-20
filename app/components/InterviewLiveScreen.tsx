@@ -119,12 +119,13 @@ export default function InterviewLiveScreen({
 
   function finishAnswer() {
     setIsRecording(false);
-    const { category, feedback } = analyzeAnswer(answerText);
+    const { category, score, feedback } = analyzeAnswer(answerText);
     const finishedResult: QuestionResult = {
       question: currentQuestion,
       answerText: answerText.trim(),
       durationSeconds: recordingSeconds,
       category,
+      score,
       feedback,
     };
     const updatedResults = [...results, finishedResult];

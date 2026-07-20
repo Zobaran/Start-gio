@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import JobDetailScreen from "./JobDetailScreen";
 
 type Category = "Marketing" | "Tecnologia" | "Finanças" | "Direito" | "Comunicação";
 type Modality = "Presencial" | "Híbrido" | "Remoto";
 
-interface Job {
+export interface Job {
   id: string;
   company: string;
   title: string;
@@ -15,6 +16,8 @@ interface Job {
   category: Category;
   minScore: number;
   description: string;
+  requirements: string[];
+  benefits: string[];
 }
 
 const CATEGORIES: Category[] = [
@@ -37,6 +40,17 @@ const JOBS: Job[] = [
     minScore: 65,
     description:
       "Você vai apoiar a área de finanças corporativas com análises de fluxo de caixa, relatórios financeiros e projeções de orçamento, acompanhando de perto analistas seniores.",
+    requirements: [
+      "Cursando Administração, Economia ou Contabilidade",
+      "Conhecimento intermediário em Excel",
+      "Disponibilidade de 6h/dia",
+    ],
+    benefits: [
+      "Vale-refeição",
+      "Vale-transporte",
+      "Plano de saúde",
+      "Bolsa-auxílio competitiva",
+    ],
   },
   {
     id: "shopee-marketing",
@@ -49,6 +63,17 @@ const JOBS: Job[] = [
     minScore: 40,
     description:
       "Apoio na criação e otimização de campanhas digitais, análise de métricas de performance e acompanhamento de redes sociais. Ideal para quem está começando na área.",
+    requirements: [
+      "Cursando Marketing, Publicidade ou áreas afins",
+      "Conhecimento em redes sociais e ferramentas de análise",
+      "Boa comunicação escrita",
+    ],
+    benefits: [
+      "Vale-refeição",
+      "Seguro de vida",
+      "Ambiente 100% remoto",
+      "Day off de aniversário",
+    ],
   },
   {
     id: "boticario-comunicacao",
@@ -61,6 +86,17 @@ const JOBS: Job[] = [
     minScore: 35,
     description:
       "Apoio na produção de conteúdo institucional, releases e materiais de marca, em contato direto com a equipe de comunicação e agências parceiras.",
+    requirements: [
+      "Cursando Comunicação, Jornalismo ou Publicidade",
+      "Boa escrita e organização",
+      "Interesse em branding e mercado de beleza",
+    ],
+    benefits: [
+      "Vale-transporte",
+      "Vale-refeição",
+      "Desconto em produtos",
+      "Parceria com universidades",
+    ],
   },
   {
     id: "magalu-tecnologia",
@@ -73,6 +109,17 @@ const JOBS: Job[] = [
     minScore: 60,
     description:
       "Participação no desenvolvimento de features para o e-commerce, com times ágeis usando Python e ferramentas de análise de dados no dia a dia.",
+    requirements: [
+      "Cursando Ciência da Computação, Engenharia ou áreas afins",
+      "Conhecimento básico em Python",
+      "Vontade de aprender times ágeis",
+    ],
+    benefits: [
+      "Vale-refeição",
+      "Plano de saúde",
+      "Gympass",
+      "Trilhas de aprendizado internas",
+    ],
   },
   {
     id: "nubank-juridico",
@@ -85,6 +132,17 @@ const JOBS: Job[] = [
     minScore: 75,
     description:
       "Apoio à área jurídica em temas de compliance regulatório, contratos e acompanhamento de processos, em um dos maiores fintechs da América Latina.",
+    requirements: [
+      "Cursando Direito",
+      "Interesse em compliance e regulação financeira",
+      "Boa capacidade analítica",
+    ],
+    benefits: [
+      "Plano de saúde e odontológico",
+      "Vale-refeição flexível",
+      "Auxílio home office",
+      "Licença parental estendida",
+    ],
   },
 ];
 
@@ -116,16 +174,14 @@ function JobCard({
   job,
   userOverallScore,
   applied,
-  expanded,
-  onToggleExpanded,
+  onViewDetails,
   onApply,
   onContinueEvoluindo,
 }: {
   job: Job;
   userOverallScore: number;
   applied: boolean;
-  expanded: boolean;
-  onToggleExpanded: () => void;
+  onViewDetails: () => void;
   onApply: () => void;
   onContinueEvoluindo: () => void;
 }) {
@@ -149,31 +205,13 @@ function JobCard({
 
       <p className="mb-4 font-extrabold text-success">{job.salary}</p>
 
-      {expanded && (
-        <p className="animate-step-in mb-4 text-sm leading-relaxed text-navy-muted">
-          {job.description}
-        </p>
-      )}
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onToggleExpanded}
-          className="flex-1 rounded-2xl bg-orange px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white transition-all duration-150 active:scale-[0.98]"
-        >
-          {expanded ? "Ver menos" : "Ver vaga"}
-        </button>
-        {expanded && (
-          <button
-            type="button"
-            onClick={onApply}
-            disabled={applied}
-            className="flex-1 rounded-2xl border-2 border-success bg-success/10 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-success transition-all duration-150 disabled:opacity-60"
-          >
-            {applied ? "Aplicado ✓" : "Aplicar agora"}
-          </button>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={onViewDetails}
+        className="w-full rounded-2xl bg-orange px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white transition-all duration-150 active:scale-[0.98]"
+      >
+        {applied ? "Ver vaga · Candidatura enviada ✓" : "Ver vaga"}
+      </button>
 
       {belowProfile && !applied && (
         <div className="mt-4 rounded-2xl border-2 border-warning/40 bg-warning/10 px-4 py-3">
@@ -214,8 +252,8 @@ export default function VagasScreen({
   const [activeCategory, setActiveCategory] = useState<"Todos" | Category>(
     "Todos",
   );
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
   const query = search.trim().toLowerCase();
   const visibleJobs = JOBS.filter((job) => {
@@ -231,6 +269,21 @@ export default function VagasScreen({
 
   function handleApply(jobId: string) {
     setAppliedIds((prev) => new Set(prev).add(jobId));
+  }
+
+  const selectedJob = JOBS.find((job) => job.id === selectedJobId) ?? null;
+
+  if (selectedJob) {
+    return (
+      <JobDetailScreen
+        job={selectedJob}
+        userOverallScore={userOverallScore}
+        applied={appliedIds.has(selectedJob.id)}
+        onBack={() => setSelectedJobId(null)}
+        onApply={() => handleApply(selectedJob.id)}
+        onContinueEvoluindo={onContinueEvoluindo}
+      />
+    );
   }
 
   return (
@@ -274,12 +327,7 @@ export default function VagasScreen({
               job={job}
               userOverallScore={userOverallScore}
               applied={appliedIds.has(job.id)}
-              expanded={expandedId === job.id}
-              onToggleExpanded={() =>
-                setExpandedId((current) =>
-                  current === job.id ? null : job.id,
-                )
-              }
+              onViewDetails={() => setSelectedJobId(job.id)}
               onApply={() => handleApply(job.id)}
               onContinueEvoluindo={onContinueEvoluindo}
             />

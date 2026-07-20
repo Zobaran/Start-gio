@@ -738,7 +738,7 @@ export default function OnboardingFlow({
           {stepIndex === 0 && (
             <section>
               <h1 className="mb-2 text-3xl font-extrabold text-foreground">
-                Quem é você?
+                Quem é você? 👋
               </h1>
               <p className="mb-8 text-navy-muted">
                 Assim a gente personaliza sua jornada no Startágio.

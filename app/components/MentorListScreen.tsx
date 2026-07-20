@@ -46,54 +46,79 @@ function OptionTag({
 function MentorCard({
   mentor,
   onSelect,
+  onCancel,
 }: {
   mentor: Mentor;
   onSelect: () => void;
+  onCancel: () => void;
 }) {
+  function handleCancelClick() {
+    const confirmed = window.confirm(
+      `Cancelar a sessão agendada com ${mentor.name}?`,
+    );
+    if (confirmed) onCancel();
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="flex w-full items-start gap-4 rounded-2xl border-2 border-navy-lighter bg-navy-light px-5 py-4 text-left transition-all duration-150 hover:border-navy-muted active:scale-[0.99]"
-    >
-      <div
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-extrabold ${AVATAR_CLASSES[mentor.avatarColor]}`}
+    <div className="rounded-2xl border-2 border-navy-lighter bg-navy-light px-5 py-4 transition-all duration-150 hover:border-navy-muted">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex w-full items-start gap-4 text-left active:scale-[0.99]"
       >
-        {initialsOf(mentor.name)}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="mb-0.5 flex items-center justify-between gap-2">
-          <p className="truncate font-semibold text-foreground">
-            {mentor.name}
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-extrabold ${AVATAR_CLASSES[mentor.avatarColor]}`}
+        >
+          {initialsOf(mentor.name)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-0.5 flex items-center justify-between gap-2">
+            <p className="truncate font-semibold text-foreground">
+              {mentor.name}
+            </p>
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${
+                mentor.status === "Livre"
+                  ? "bg-success/15 text-success"
+                  : "bg-orange/15 text-orange"
+              }`}
+            >
+              {mentor.status}
+            </span>
+          </div>
+          <p className="mb-1 text-sm text-navy-muted">
+            {mentor.area} · {mentor.company}
           </p>
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${
-              mentor.status === "Livre"
-                ? "bg-success/15 text-success"
-                : "bg-orange/15 text-orange"
-            }`}
-          >
-            {mentor.status}
+          <p className="mb-3 text-xs text-navy-muted/80">
+            {mentor.specialty}
+          </p>
+          <span className="inline-block rounded-xl bg-orange px-4 py-2 text-xs font-bold uppercase tracking-wide text-white">
+            {mentor.status === "Agendado" ? "Ver agendamento" : "Agendar sessão"}
           </span>
         </div>
-        <p className="mb-1 text-sm text-navy-muted">
-          {mentor.area} · {mentor.company}
-        </p>
-        <p className="mb-3 text-xs text-navy-muted/80">{mentor.specialty}</p>
-        <span className="inline-block rounded-xl bg-orange px-4 py-2 text-xs font-bold uppercase tracking-wide text-white">
-          {mentor.status === "Agendado" ? "Ver agendamento" : "Agendar sessão"}
-        </span>
-      </div>
-    </button>
+      </button>
+
+      {mentor.status === "Agendado" && (
+        <button
+          type="button"
+          onClick={handleCancelClick}
+          className="mt-3 w-full rounded-xl border-2 border-error/40 px-4 py-2 text-xs font-bold uppercase tracking-wide text-error transition-colors duration-150 hover:border-error hover:bg-error/10"
+        >
+          Cancelar agendamento
+        </button>
+      )}
+    </div>
   );
 }
 
 export default function MentorListScreen({
   mentors,
   onSelectMentor,
+  onCancelMentor,
 }: {
   mentors: Mentor[];
   onSelectMentor: (id: string) => void;
+  onCancelMentor: (id: string) => void;
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [areaFilter, setAreaFilter] = useState("Todos");
@@ -162,6 +187,7 @@ export default function MentorListScreen({
               key={mentor.id}
               mentor={mentor}
               onSelect={() => onSelectMentor(mentor.id)}
+              onCancel={() => onCancelMentor(mentor.id)}
             />
           ))}
           {visibleMentors.length === 0 && (

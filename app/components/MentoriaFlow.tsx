@@ -106,6 +106,11 @@ export default function MentoriaFlow() {
         setSelectedId(id);
         setStage("schedule");
       }}
+      onCancelMentor={(id) => {
+        setMentors((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, status: "Livre" } : m)),
+        );
+      }}
     />
   );
 }

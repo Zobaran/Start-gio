@@ -1,6 +1,6 @@
 "use client";
 
-import type { QuestionResult } from "./InterviewFlow";
+import type { InterviewConfig, QuestionResult } from "./InterviewFlow";
 
 const IMPROVEMENT_POINTS = [
   "Pratique respostas mais objetivas, com até 1-2 minutos por pergunta.",
@@ -22,12 +22,44 @@ function scoreLabel(score: number): string {
   return "Continue praticando!";
 }
 
+function buildOverallComment({
+  score,
+  goodCount,
+  okCount,
+  badCount,
+  total,
+  company,
+}: {
+  score: number;
+  goodCount: number;
+  okCount: number;
+  badCount: number;
+  total: number;
+  company?: string;
+}): string {
+  const companyPhrase = company ? ` para a vaga na ${company}` : "";
+  const breakdown = `Foram ${goodCount} de ${total} respostas boas, ${okCount} razoáveis e ${badCount} que precisam de mais desenvolvimento.`;
+
+  if (score >= 85) {
+    return `Sua simulação${companyPhrase} teve nota ${score}/100 — um desempenho excelente. ${breakdown} Você está bem preparado(a); mantenha esse padrão de exemplos concretos e respostas completas.`;
+  }
+  if (score >= 70) {
+    return `Sua simulação${companyPhrase} teve nota ${score}/100 — um bom resultado. ${breakdown} Reforce as respostas mais fracas com exemplos concretos e você fica ainda mais pronto(a).`;
+  }
+  if (score >= 55) {
+    return `Sua simulação${companyPhrase} teve nota ${score}/100 — um começo razoável. ${breakdown} Foque em desenvolver mais cada resposta, com exemplos reais e evitando expressões que passam insegurança.`;
+  }
+  return `Sua simulação${companyPhrase} teve nota ${score}/100. ${breakdown} Vale praticar bastante antes da entrevista real: respostas muito curtas ou em branco custam pontos importantes com recrutadores.`;
+}
+
 export default function InterviewFeedbackScreen({
+  config,
   results,
   score,
   onRestart,
   onLeave,
 }: {
+  config: InterviewConfig | null;
   results: QuestionResult[];
   score: number;
   onRestart: () => void;
@@ -38,6 +70,14 @@ export default function InterviewFeedbackScreen({
   const badCount = results.filter(
     (r) => r.category === "short" || r.category === "blank",
   ).length;
+  const overallComment = buildOverallComment({
+    score,
+    goodCount,
+    okCount,
+    badCount,
+    total: results.length,
+    company: config?.company,
+  });
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-navy">
@@ -51,8 +91,11 @@ export default function InterviewFeedbackScreen({
             <div className="mx-auto mb-3 flex h-28 w-28 items-center justify-center rounded-full border-4 border-orange text-4xl font-extrabold text-orange">
               {score}
             </div>
-            <p className="text-xl font-extrabold text-foreground">
+            <p className="mb-4 text-xl font-extrabold text-foreground">
               {scoreLabel(score)}
+            </p>
+            <p className="text-sm leading-relaxed text-navy-muted">
+              {overallComment}
             </p>
           </div>
 

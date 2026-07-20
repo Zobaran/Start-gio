@@ -264,16 +264,6 @@ export default function HomeScreen({
             userOverallScore={overallScore}
             onContinueEvoluindo={() => setActiveTab("cursos")}
           />
-        ) : activeTab !== "cursos" ? (
-          <div
-            key={activeTab}
-            className="animate-step-in flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
-          >
-            <span className="text-5xl">
-              {TABS.find((tab) => tab.id === activeTab)?.icon}
-            </span>
-            <p className="text-navy-muted">Em breve</p>
-          </div>
         ) : (
         <main className="animate-step-in flex-1 overflow-y-auto px-6 pb-28 pt-6">
           <div className="mx-auto w-full max-w-md">
@@ -346,7 +336,7 @@ export default function HomeScreen({
         )}
       </div>
 
-      <nav className="relative z-10 flex items-center justify-around border-t-2 border-navy-lighter bg-navy-light/80 px-2 py-3 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-around border-t-2 border-navy-lighter bg-navy-light/95 px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
         {TABS.map((tab) => (
           <button
             key={tab.id}

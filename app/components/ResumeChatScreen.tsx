@@ -5,8 +5,12 @@ import { useEffect, useRef, useState } from "react";
 export interface ResumeData {
   name: string;
   education: string;
-  area: string;
-  skills: string;
+  objective: string;
+  experience: string;
+  achievements: string;
+  technicalSkills: string;
+  softSkills: string;
+  languages: string;
   bio: string;
 }
 
@@ -35,18 +39,39 @@ const QUESTIONS: {
       `Prazer, ${firstName(a.name ?? "")}! Em qual faculdade e curso você estuda (ou estudou)?`,
   },
   {
-    key: "area",
-    prompt: () => "Qual é a sua área de interesse profissional?",
+    key: "objective",
+    prompt: () =>
+      "Qual é o seu objetivo profissional? (ex: vaga ou área que você busca)",
   },
   {
-    key: "skills",
+    key: "experience",
     prompt: () =>
-      "Quais habilidades você tem? (Excel, inglês, Canva, etc. — pode separar por vírgula)",
+      "Conte sobre suas experiências profissionais ou estágios até agora (se ainda não teve nenhuma, pode dizer isso também).",
+  },
+  {
+    key: "achievements",
+    prompt: () =>
+      "Quais conquistas ou resultados você tem orgulho? (projetos, prêmios, notas, certificados, etc.)",
+  },
+  {
+    key: "technicalSkills",
+    prompt: () =>
+      "Quais habilidades técnicas você tem? (Excel, Python, Canva, etc. — pode separar por vírgula)",
+  },
+  {
+    key: "softSkills",
+    prompt: () =>
+      "E habilidades comportamentais? (trabalho em equipe, comunicação, liderança, etc.)",
+  },
+  {
+    key: "languages",
+    prompt: () =>
+      "Quais idiomas você fala e em qual nível? (ex: Inglês intermediário, Espanhol básico)",
   },
   {
     key: "bio",
     prompt: () =>
-      "Por último: escreva uma breve apresentação pessoal sobre você.",
+      "Para fechar, escreva uma breve apresentação pessoal sobre você.",
   },
 ];
 
