@@ -38,7 +38,7 @@ export default function Home() {
     return (
       <OnboardingFlow
         onFinish={(result) => {
-          setQuizPercent(result.percent);
+          setQuizPercent(result ? result.percent : null);
           setPhase("home");
         }}
       />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ResumeData } from "./ResumeChatScreen";
 
 function splitList(value: string): string[] {
@@ -21,32 +22,37 @@ function slugify(name: string): string {
   );
 }
 
-function buildResumeText(data: ResumeData): string {
-  return [
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildResumeHtml(data: ResumeData): string {
+  const section = (title: string, content: string) =>
+    content.trim()
+      ? `<h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.05em;color:#555;margin:18px 0 6px;">${escapeHtml(
+          title,
+        )}</h2><p style="font-size:14px;line-height:1.5;margin:0;">${escapeHtml(
+          content,
+        ).replace(/\n/g, "<br/>")}</p>`
+      : "";
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${escapeHtml(
     data.name,
-    data.bio,
-    "",
-    "OBJETIVO",
-    data.objective,
-    "",
-    "FORMAÇÃO ACADÊMICA",
-    data.education,
-    "",
-    "EXPERIÊNCIA PROFISSIONAL",
-    data.experience,
-    "",
-    "PRINCIPAIS CONQUISTAS",
-    data.achievements,
-    "",
-    "HABILIDADES TÉCNICAS",
-    splitList(data.technicalSkills).join(", "),
-    "",
-    "HABILIDADES COMPORTAMENTAIS",
-    splitList(data.softSkills).join(", "),
-    "",
-    "IDIOMAS",
-    splitList(data.languages).join(", "),
-  ].join("\n");
+  )}</title></head><body style="font-family:Arial, sans-serif;color:#1a1a1a;max-width:700px;margin:0 auto;padding:24px;">
+    <h1 style="font-size:24px;margin:0 0 4px;">${escapeHtml(data.name)}</h1>
+    ${data.bio ? `<p style="font-size:14px;color:#555;margin:0 0 12px;">${escapeHtml(data.bio)}</p>` : ""}
+    ${section("Objetivo", data.objective)}
+    ${section("Formação acadêmica", data.education)}
+    ${section("Experiência profissional", data.experience)}
+    ${section("Principais conquistas", data.achievements)}
+    ${section("Habilidades técnicas", splitList(data.technicalSkills).join(", "))}
+    ${section("Habilidades comportamentais", splitList(data.softSkills).join(", "))}
+    ${section("Idiomas", splitList(data.languages).join(", "))}
+  </body></html>`;
 }
 
 function Section({
@@ -90,16 +96,30 @@ export default function ResumeResultScreen({
   onBack: () => void;
   onRestart: () => void;
 }) {
-  function handleDownload() {
-    const blob = new Blob([buildResumeText(data)], {
-      type: "text/plain;charset=utf-8",
+  const [showFormatPicker, setShowFormatPicker] = useState(false);
+
+  function handleDownloadDoc() {
+    const html = buildResumeHtml(data);
+    const blob = new Blob(["﻿", html], {
+      type: "application/msword",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `curriculo-${slugify(data.name)}.txt`;
+    link.download = `curriculo-${slugify(data.name)}.doc`;
     link.click();
     URL.revokeObjectURL(url);
+    setShowFormatPicker(false);
+  }
+
+  function handleDownloadPdf() {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(buildResumeHtml(data));
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    setShowFormatPicker(false);
   }
 
   return (
@@ -170,7 +190,7 @@ export default function ResumeResultScreen({
           <div className="mt-6 flex flex-col gap-3">
             <button
               type="button"
-              onClick={handleDownload}
+              onClick={() => setShowFormatPicker(true)}
               className="w-full rounded-2xl bg-orange px-6 py-4 text-lg font-extrabold uppercase tracking-wide text-white shadow-[0_5px_0_0_var(--color-orange-dark)] transition-all duration-100 active:translate-y-[3px] active:shadow-[0_2px_0_0_var(--color-orange-dark)]"
             >
               Baixar currículo
@@ -185,6 +205,48 @@ export default function ResumeResultScreen({
           </div>
         </div>
       </main>
+
+      {showFormatPicker && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-navy/70 px-4 pb-4 sm:items-center"
+          onClick={() => setShowFormatPicker(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border-2 border-navy-lighter bg-navy px-6 py-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-1 text-lg font-extrabold text-foreground">
+              Escolha o formato
+            </h2>
+            <p className="mb-5 text-sm text-navy-muted">
+              Em qual formato você quer baixar seu currículo?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                className="w-full rounded-2xl bg-orange px-5 py-3 text-base font-extrabold uppercase tracking-wide text-white transition-all duration-150 active:scale-[0.98]"
+              >
+                PDF
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadDoc}
+                className="w-full rounded-2xl border-2 border-navy-lighter bg-navy-light px-5 py-3 text-base font-extrabold uppercase tracking-wide text-foreground transition-all duration-150 hover:border-navy-muted active:scale-[0.98]"
+              >
+                DOC (Word)
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFormatPicker(false)}
+                className="w-full text-center text-sm font-semibold text-navy-muted transition hover:text-foreground"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

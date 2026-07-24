@@ -175,14 +175,14 @@ function JobCard({
   userOverallScore,
   applied,
   onViewDetails,
-  onApply,
+  onToggleApply,
   onContinueEvoluindo,
 }: {
   job: Job;
   userOverallScore: number;
   applied: boolean;
   onViewDetails: () => void;
-  onApply: () => void;
+  onToggleApply: () => void;
   onContinueEvoluindo: () => void;
 }) {
   const belowProfile = userOverallScore < job.minScore;
@@ -205,12 +205,27 @@ function JobCard({
 
       <p className="mb-4 font-extrabold text-success">{job.salary}</p>
 
+      {applied && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-3 py-1 text-xs font-bold text-success">
+            Candidatura enviada ✓
+          </span>
+          <button
+            type="button"
+            onClick={onToggleApply}
+            className="text-xs font-semibold text-navy-muted transition hover:text-error hover:underline"
+          >
+            Cancelar candidatura
+          </button>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={onViewDetails}
         className="w-full rounded-2xl bg-orange px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white transition-all duration-150 active:scale-[0.98]"
       >
-        {applied ? "Ver vaga · Candidatura enviada ✓" : "Ver vaga"}
+        Ver vaga
       </button>
 
       {belowProfile && !applied && (
@@ -222,7 +237,7 @@ function JobCard({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={onApply}
+              onClick={onToggleApply}
               className="rounded-full border-2 border-warning/50 px-3 py-1.5 text-xs font-bold text-warning transition hover:border-warning"
             >
               Aplicar mesmo assim
@@ -267,8 +282,16 @@ export default function VagasScreen({
     return matchesCategory && matchesQuery;
   });
 
-  function handleApply(jobId: string) {
-    setAppliedIds((prev) => new Set(prev).add(jobId));
+  function handleToggleApply(jobId: string) {
+    setAppliedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
   }
 
   const selectedJob = JOBS.find((job) => job.id === selectedJobId) ?? null;
@@ -280,7 +303,7 @@ export default function VagasScreen({
         userOverallScore={userOverallScore}
         applied={appliedIds.has(selectedJob.id)}
         onBack={() => setSelectedJobId(null)}
-        onApply={() => handleApply(selectedJob.id)}
+        onToggleApply={() => handleToggleApply(selectedJob.id)}
         onContinueEvoluindo={onContinueEvoluindo}
       />
     );
@@ -328,7 +351,7 @@ export default function VagasScreen({
               userOverallScore={userOverallScore}
               applied={appliedIds.has(job.id)}
               onViewDetails={() => setSelectedJobId(job.id)}
-              onApply={() => handleApply(job.id)}
+              onToggleApply={() => handleToggleApply(job.id)}
               onContinueEvoluindo={onContinueEvoluindo}
             />
           ))}

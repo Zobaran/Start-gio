@@ -3,7 +3,14 @@
 import { useState } from "react";
 
 type PersonaId = "ensino_medio" | "faculdade" | "ja_estagiei";
-type GoalId = "curriculo" | "entrevistas" | "area";
+type GoalId =
+  | "curriculo"
+  | "entrevistas"
+  | "area"
+  | "cursos"
+  | "ingles"
+  | "network"
+  | "vagas";
 type EnglishLevel = "Iniciante" | "Intermediário" | "Avançado";
 
 interface CardOption<T extends string> {
@@ -65,6 +72,10 @@ const GOAL_OPTIONS: CardOption<GoalId>[] = [
   { id: "curriculo", icon: "📄", label: "Montar meu currículo" },
   { id: "entrevistas", icon: "🎤", label: "Me preparar para entrevistas" },
   { id: "area", icon: "🧭", label: "Descobrir minha área" },
+  { id: "cursos", icon: "📚", label: "Fazer novos cursos" },
+  { id: "ingles", icon: "🗣️", label: "Melhorar meu inglês" },
+  { id: "network", icon: "🤝", label: "Aumentar meu network" },
+  { id: "vagas", icon: "🔎", label: "Descobrir vagas na minha área" },
 ];
 
 const MULTIPLE_CHOICE_BANK: MultipleChoiceExercise[] = [
@@ -249,13 +260,6 @@ const PAIRS_BANK: PairsExercise[] = [
   },
 ];
 
-const EXERCISE_BANK: Exercise[] = [
-  ...MULTIPLE_CHOICE_BANK,
-  ...FILL_BLANK_BANK,
-  ...BLOCK_TRANSLATION_BANK,
-  ...PAIRS_BANK,
-];
-
 function shuffle<T>(array: T[]): T[] {
   const copy = [...array];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -265,9 +269,23 @@ function shuffle<T>(array: T[]): T[] {
   return copy;
 }
 
+const SESSION_EXERCISE_COUNT = 15;
+
 function pickSessionExercises(): Exercise[] {
-  const count = 10 + Math.floor(Math.random() * 6); // 10 to 15
-  return shuffle(EXERCISE_BANK).slice(0, count);
+  const typeBanks: Exercise[][] = [
+    MULTIPLE_CHOICE_BANK,
+    FILL_BLANK_BANK,
+    BLOCK_TRANSLATION_BANK,
+    PAIRS_BANK,
+  ];
+  const banks = typeBanks.map((bank) => shuffle(bank));
+
+  // Guarantee every exercise type appears at least once.
+  const guaranteed = banks.map((bank) => bank[0]);
+  const leftovers = shuffle(banks.flatMap((bank) => bank.slice(1)));
+  const rest = leftovers.slice(0, SESSION_EXERCISE_COUNT - guaranteed.length);
+
+  return shuffle([...guaranteed, ...rest]);
 }
 
 function levelFromPercent(percent: number): EnglishLevel {
@@ -373,7 +391,7 @@ function MultipleChoiceExerciseView({
     if (selected !== null) return;
     setSelected(index);
     const correct = index === exercise.correctIndex;
-    setTimeout(() => onComplete(correct), 900);
+    setTimeout(() => onComplete(correct), correct ? 900 : 1800);
   }
 
   return (
@@ -403,9 +421,14 @@ function MultipleChoiceExerciseView({
               type="button"
               disabled={isAnswered}
               onClick={() => handleSelect(idx)}
-              className={`w-full rounded-2xl border-2 px-5 py-4 text-left text-lg font-semibold text-foreground transition-all duration-150 ${classes}`}
+              className={`flex w-full items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left text-lg font-semibold text-foreground transition-all duration-150 ${classes}`}
             >
-              {option}
+              <span>{option}</span>
+              {isAnswered && isCorrectOption && (
+                <span className="text-sm font-bold uppercase tracking-wide text-success">
+                  ✓ Resposta correta
+                </span>
+              )}
             </button>
           );
         })}
@@ -427,8 +450,11 @@ function FillBlankExerciseView({
     if (selected !== null) return;
     setSelected(index);
     const correct = index === exercise.correctIndex;
-    setTimeout(() => onComplete(correct), 900);
+    setTimeout(() => onComplete(correct), correct ? 900 : 1800);
   }
+
+  const isAnswered = selected !== null;
+  const wasWrong = isAnswered && selected !== exercise.correctIndex;
 
   return (
     <section>
@@ -437,7 +463,6 @@ function FillBlankExerciseView({
       </h1>
       <div className="flex flex-wrap justify-center gap-3">
         {exercise.options.map((option, idx) => {
-          const isAnswered = selected !== null;
           const isCorrectOption = idx === exercise.correctIndex;
           const isPicked = idx === selected;
 
@@ -464,6 +489,14 @@ function FillBlankExerciseView({
           );
         })}
       </div>
+      {wasWrong && (
+        <p className="mt-4 text-center text-sm text-navy-muted">
+          Resposta correta:{" "}
+          <span className="font-semibold text-success">
+            {exercise.options[exercise.correctIndex]}
+          </span>
+        </p>
+      )}
     </section>
   );
 }
@@ -502,7 +535,7 @@ function BlockTranslationExerciseView({
       answer.map((b) => b.text.toLowerCase()).join(" ") ===
       exercise.targetWords.join(" ").toLowerCase();
     setResult(isCorrect);
-    setTimeout(() => onComplete(isCorrect), 1000);
+    setTimeout(() => onComplete(isCorrect), isCorrect ? 1000 : 1800);
   }
 
   const stripClasses =
@@ -597,7 +630,7 @@ function PairsExerciseView({
       setHadMistake(true);
       setPulse({ left: selectedLeft, right: rightEn });
       setSelectedLeft(null);
-      setTimeout(() => setPulse(null), 400);
+      setTimeout(() => setPulse(null), 1400);
     }
   }
 
@@ -636,11 +669,15 @@ function PairsExerciseView({
           {rightItems.map((pair) => {
             const isMatched = matched.has(pair.en);
             const isPulsingWrong = pulse?.right === pair.en;
+            const isPulsingCorrectAnswer =
+              pulse?.left === pair.en && pulse.right !== pair.en;
             let classes =
               "border-navy-lighter bg-navy-light hover:border-navy-muted";
             if (isMatched) classes = "border-success bg-success/10 opacity-60";
             else if (isPulsingWrong)
               classes = "border-error bg-error/10 animate-shake";
+            else if (isPulsingCorrectAnswer)
+              classes = "border-success bg-success/10";
 
             return (
               <button
@@ -651,6 +688,9 @@ function PairsExerciseView({
                 className={`rounded-2xl border-2 px-4 py-3 text-base font-semibold text-foreground transition-all duration-150 ${classes}`}
               >
                 {pair.pt}
+                {isPulsingCorrectAnswer && (
+                  <span className="ml-2 text-success">✓ correto</span>
+                )}
               </button>
             );
           })}
@@ -669,11 +709,12 @@ export interface QuizResult {
 export default function OnboardingFlow({
   onFinish,
 }: {
-  onFinish: (result: QuizResult) => void;
+  onFinish: (result: QuizResult | null) => void;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [persona, setPersona] = useState<PersonaId | null>(null);
-  const [goal, setGoal] = useState<GoalId | null>(null);
+  const [selectedGoals, setSelectedGoals] = useState<Set<GoalId>>(new Set());
+  const [customGoal, setCustomGoal] = useState("");
   const [sessionExercises] = useState<Exercise[]>(() =>
     pickSessionExercises(),
   );
@@ -706,7 +747,34 @@ export default function OnboardingFlow({
     setStepIndex(QUIZ_START_STEP);
   }
 
+  function toggleGoal(id: GoalId) {
+    setSelectedGoals((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function skipTest() {
+    onFinish(null);
+  }
+
+  function goToOnboardingStart() {
+    setStepIndex(0);
+    setPersona(null);
+    setSelectedGoals(new Set());
+    setCustomGoal("");
+    setScore(0);
+    setStartTime(null);
+    setEndTime(null);
+  }
+
   const showBack = stepIndex === 1 || stepIndex === 2;
+  const canSkipTest = stepIndex >= 2 && stepIndex < resultStep;
 
   const total = sessionExercises.length;
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
@@ -723,14 +791,31 @@ export default function OnboardingFlow({
             type="button"
             onClick={goBack}
             aria-label="Voltar"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-navy-muted transition hover:text-foreground"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-2xl text-navy-muted transition hover:text-foreground"
           >
             ←
           </button>
         ) : (
-          <div className="w-9 shrink-0" />
+          <div className="w-11 shrink-0" />
         )}
         <ProgressBar stepIndex={stepIndex} totalSteps={resultStep} />
+        {canSkipTest && (
+          <button
+            type="button"
+            onClick={skipTest}
+            className="shrink-0 text-xs font-semibold text-navy-muted transition hover:text-foreground hover:underline"
+          >
+            Pular teste
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={goToOnboardingStart}
+          aria-label="Voltar ao início do onboarding"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg transition hover:opacity-80"
+        >
+          🏠
+        </button>
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
@@ -763,7 +848,8 @@ export default function OnboardingFlow({
                 Qual seu objetivo?
               </h1>
               <p className="mb-8 text-navy-muted">
-                Vamos focar no que mais importa pra você agora.
+                Vamos focar no que mais importa pra você agora. Você pode
+                escolher mais de uma opção.
               </p>
               <div className="flex flex-col gap-4">
                 {GOAL_OPTIONS.map((option) => (
@@ -771,10 +857,26 @@ export default function OnboardingFlow({
                     key={option.id}
                     icon={option.icon}
                     label={option.label}
-                    selected={goal === option.id}
-                    onClick={() => setGoal(option.id)}
+                    selected={selectedGoals.has(option.id)}
+                    onClick={() => toggleGoal(option.id)}
                   />
                 ))}
+              </div>
+              <div className="mt-4">
+                <label
+                  htmlFor="custom-goal"
+                  className="mb-2 block text-sm font-semibold text-navy-muted"
+                >
+                  Outro objetivo — escreva aqui
+                </label>
+                <input
+                  id="custom-goal"
+                  type="text"
+                  value={customGoal}
+                  onChange={(e) => setCustomGoal(e.target.value)}
+                  placeholder="Conta pra gente..."
+                  className="w-full rounded-2xl border-2 border-navy-lighter bg-navy-light px-5 py-3 text-foreground placeholder:text-navy-muted outline-none transition-colors duration-150 focus:border-orange"
+                />
               </div>
             </section>
           )}
@@ -882,7 +984,10 @@ export default function OnboardingFlow({
           </ContinueButton>
         )}
         {stepIndex === 1 && (
-          <ContinueButton disabled={!goal} onClick={() => setStepIndex(2)}>
+          <ContinueButton
+            disabled={selectedGoals.size === 0 && customGoal.trim() === ""}
+            onClick={() => setStepIndex(2)}
+          >
             Continuar
           </ContinueButton>
         )}

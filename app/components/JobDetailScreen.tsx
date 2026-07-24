@@ -7,14 +7,14 @@ export default function JobDetailScreen({
   userOverallScore,
   applied,
   onBack,
-  onApply,
+  onToggleApply,
   onContinueEvoluindo,
 }: {
   job: Job;
   userOverallScore: number;
   applied: boolean;
   onBack: () => void;
-  onApply: () => void;
+  onToggleApply: () => void;
   onContinueEvoluindo: () => void;
 }) {
   const belowProfile = userOverallScore < job.minScore;
@@ -32,9 +32,14 @@ export default function JobDetailScreen({
         </button>
 
         <p className="text-sm font-semibold text-navy-muted">{job.company}</p>
-        <h1 className="mb-3 text-2xl font-extrabold text-foreground">
+        <h1 className="mb-2 text-2xl font-extrabold text-foreground">
           {job.title}
         </h1>
+        {applied && (
+          <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-success/15 px-3 py-1 text-xs font-bold text-success">
+            Candidatura enviada ✓
+          </span>
+        )}
 
         <div className="mb-4 flex flex-wrap gap-2">
           <span className="rounded-full border-2 border-navy-lighter px-3 py-1 text-xs font-semibold text-navy-muted">
@@ -113,11 +118,14 @@ export default function JobDetailScreen({
 
         <button
           type="button"
-          onClick={onApply}
-          disabled={applied}
-          className="w-full rounded-2xl bg-orange px-6 py-4 text-lg font-extrabold uppercase tracking-wide text-white shadow-[0_5px_0_0_var(--color-orange-dark)] transition-all duration-100 active:translate-y-[3px] active:shadow-[0_2px_0_0_var(--color-orange-dark)] disabled:cursor-not-allowed disabled:bg-navy-light disabled:text-navy-muted disabled:shadow-none"
+          onClick={onToggleApply}
+          className={`w-full rounded-2xl px-6 py-4 text-lg font-extrabold uppercase tracking-wide transition-all duration-100 active:translate-y-[3px] ${
+            applied
+              ? "bg-navy-light text-error shadow-[0_5px_0_0_var(--color-navy-lighter)] active:shadow-[0_2px_0_0_var(--color-navy-lighter)]"
+              : "bg-orange text-white shadow-[0_5px_0_0_var(--color-orange-dark)] active:shadow-[0_2px_0_0_var(--color-orange-dark)]"
+          }`}
         >
-          {applied ? "Candidatura enviada ✓" : "Candidatar-me"}
+          {applied ? "Cancelar candidatura" : "Candidatar-me"}
         </button>
       </div>
     </main>
