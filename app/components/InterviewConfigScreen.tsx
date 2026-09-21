@@ -63,10 +63,12 @@ function OptionTag({
 
 export default function InterviewConfigScreen({
   initialConfig,
+  areaLabel,
   onLeave,
   onStart,
 }: {
   initialConfig: InterviewConfig | null;
+  areaLabel?: string | null;
   onLeave: () => void;
   onStart: (config: InterviewConfig) => void;
 }) {
@@ -117,6 +119,13 @@ export default function InterviewConfigScreen({
           <p className="mb-8 text-navy-muted">
             Configure sua simulação antes de começar.
           </p>
+
+          {areaLabel && (
+            <p className="mb-6 rounded-2xl border-2 border-orange/40 bg-orange/10 px-4 py-3 text-sm text-orange">
+              🧭 Baseado na área que você escolheu no onboarding:{" "}
+              <span className="font-bold">{areaLabel}</span>
+            </p>
+          )}
 
           <div className="flex flex-col gap-5">
             <TextField

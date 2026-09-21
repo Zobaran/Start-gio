@@ -90,6 +90,7 @@ export default function ProfileScreen({
   interviewsCount,
   quizPercent,
   hasResume,
+  areaLabel,
   onOpenResume,
   onOpenSettings,
 }: {
@@ -101,6 +102,7 @@ export default function ProfileScreen({
   interviewsCount: number;
   quizPercent: number | null;
   hasResume: boolean;
+  areaLabel?: string | null;
   onOpenResume: () => void;
   onOpenSettings: () => void;
 }) {
@@ -131,6 +133,11 @@ export default function ProfileScreen({
           <p className="text-sm text-navy-muted">
             {education ?? "Adicione sua faculdade e curso no currículo"}
           </p>
+          {areaLabel && (
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border-2 border-orange/40 bg-orange/10 px-3 py-1 text-xs font-bold text-orange">
+              🧭 {areaLabel}
+            </span>
+          )}
         </div>
 
         <div className="mb-8 flex flex-col items-center">

@@ -7,12 +7,65 @@ import ResumeChatScreen, {
 import ResumeResultScreen from "./ResumeResultScreen";
 import InterviewFlow from "./InterviewFlow";
 import MentoriaFlow from "./MentoriaFlow";
-import VagasScreen from "./VagasScreen";
+import VagasScreen, { type Category as VagasCategory } from "./VagasScreen";
 import ProfileScreen from "./ProfileScreen";
 import SettingsScreen from "./SettingsScreen";
+import type { AreaId, OnboardingResult } from "./OnboardingFlow";
 
 type Category = "Todos" | "Inglês" | "Excel" | "Python";
 type TabId = "cursos" | "entrevista" | "mentoria" | "vagas" | "perfil";
+type ProfileFlow = "menu" | "chat" | "result" | "settings";
+
+const AREA_TO_VAGAS_CATEGORY: Partial<Record<AreaId, VagasCategory>> = {
+  marketing_comunicacao: "Marketing",
+  tecnologia_dados: "Tecnologia",
+  financas_administracao: "Finanças",
+  direito: "Direito",
+};
+
+interface InitialRoute {
+  tab: TabId;
+  courseCategory: Category;
+  profileFlow: ProfileFlow;
+  vagasCategory: "Todos" | VagasCategory;
+}
+
+function resolveInitialRoute(
+  onboarding: OnboardingResult | null,
+): InitialRoute {
+  const fallback: InitialRoute = {
+    tab: "cursos",
+    courseCategory: "Todos",
+    profileFlow: "menu",
+    vagasCategory: "Todos",
+  };
+
+  if (!onboarding || !onboarding.goal) return fallback;
+
+  switch (onboarding.goal) {
+    case "curriculo":
+      return { ...fallback, tab: "perfil", profileFlow: "chat" };
+    case "entrevistas":
+      return { ...fallback, tab: "entrevista" };
+    case "cursos":
+      return { ...fallback, tab: "cursos" };
+    case "ingles":
+      return { ...fallback, tab: "cursos", courseCategory: "Inglês" };
+    case "network":
+      return { ...fallback, tab: "mentoria" };
+    case "vagas":
+      return {
+        ...fallback,
+        tab: "vagas",
+        vagasCategory: onboarding.area
+          ? (AREA_TO_VAGAS_CATEGORY[onboarding.area] ?? "Todos")
+          : "Todos",
+      };
+    case "area":
+    default:
+      return fallback;
+  }
+}
 
 interface Course {
   id: string;
@@ -124,8 +177,6 @@ function CourseCard({ course }: { course: Course }) {
   );
 }
 
-type ProfileFlow = "menu" | "chat" | "result" | "settings";
-
 interface InterviewStats {
   count: number;
   totalScore: number;
@@ -152,21 +203,30 @@ function computeOverallScore({
 export default function HomeScreen({
   userName,
   quizPercent,
+  onboarding,
   onSignOut,
 }: {
   userName: string;
   quizPercent: number | null;
+  onboarding: OnboardingResult | null;
   onSignOut: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<TabId>("cursos");
-  const [activeCategory, setActiveCategory] = useState<Category>("Todos");
+  const [initialRoute] = useState(() => resolveInitialRoute(onboarding));
+  const [activeTab, setActiveTab] = useState<TabId>(initialRoute.tab);
+  const [activeCategory, setActiveCategory] = useState<Category>(
+    initialRoute.courseCategory,
+  );
   const [search, setSearch] = useState("");
-  const [profileFlow, setProfileFlow] = useState<ProfileFlow>("menu");
+  const [profileFlow, setProfileFlow] = useState<ProfileFlow>(
+    initialRoute.profileFlow,
+  );
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [interviewStats, setInterviewStats] = useState<InterviewStats>({
     count: 0,
     totalScore: 0,
   });
+
+  const areaLabel = onboarding?.areaLabel ?? null;
 
   const displayName = userName.trim() || "Convidado";
   const avatarInitial = displayName.charAt(0).toUpperCase();
@@ -201,6 +261,7 @@ export default function HomeScreen({
             totalScore: s.totalScore + score,
           }))
         }
+        areaLabel={areaLabel}
       />
     );
   }
@@ -222,6 +283,7 @@ export default function HomeScreen({
           setResumeData(data);
           setProfileFlow("result");
         }}
+        areaLabel={areaLabel}
       />
     );
   }
@@ -253,6 +315,7 @@ export default function HomeScreen({
             interviewsCount={interviewStats.count}
             quizPercent={quizPercent}
             hasResume={!!resumeData}
+            areaLabel={areaLabel}
             onOpenResume={() => setProfileFlow(resumeData ? "result" : "chat")}
             onOpenSettings={() => setProfileFlow("settings")}
           />
@@ -262,6 +325,7 @@ export default function HomeScreen({
           <VagasScreen
             key="vagas"
             userOverallScore={overallScore}
+            initialCategory={initialRoute.vagasCategory}
             onContinueEvoluindo={() => setActiveTab("cursos")}
           />
         ) : (

@@ -19,7 +19,18 @@
       "Bash(curl -s http://localhost:3000 -o /dev/null -w \"HTTP %{http_code}\\\\n\")",
       "Bash(git config *)",
       "Bash(gh auth *)",
-      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000)"
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(npm run *)",
+      "Bash(disown)",
+      "Bash(kill %1)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(npx next *)",
+      "Bash(npx playwright *)",
+      "Bash(node verify_onboarding.js)",
+      "Bash(node /tmp/verify_onboarding.js)",
+      "Bash(NODE_PATH=/Users/flaviatchernobilsky/.npm/_npx/e41f203b7505f1fb/node_modules node *)"
     ]
   }
 }

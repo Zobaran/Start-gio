@@ -3,7 +3,12 @@
 import { useState } from "react";
 import JobDetailScreen from "./JobDetailScreen";
 
-type Category = "Marketing" | "Tecnologia" | "Finanças" | "Direito" | "Comunicação";
+export type Category =
+  | "Marketing"
+  | "Tecnologia"
+  | "Finanças"
+  | "Direito"
+  | "Comunicação";
 type Modality = "Presencial" | "Híbrido" | "Remoto";
 
 export interface Job {
@@ -258,14 +263,16 @@ function JobCard({
 
 export default function VagasScreen({
   userOverallScore,
+  initialCategory,
   onContinueEvoluindo,
 }: {
   userOverallScore: number;
+  initialCategory?: "Todos" | Category;
   onContinueEvoluindo: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<"Todos" | Category>(
-    "Todos",
+    initialCategory ?? "Todos",
   );
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);

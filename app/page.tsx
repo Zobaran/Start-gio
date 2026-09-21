@@ -3,7 +3,9 @@
 import { useState } from "react";
 import SplashScreen from "./components/SplashScreen";
 import AuthScreen from "./components/AuthScreen";
-import OnboardingFlow from "./components/OnboardingFlow";
+import OnboardingFlow, {
+  type OnboardingResult,
+} from "./components/OnboardingFlow";
 import HomeScreen from "./components/HomeScreen";
 
 type Phase = "splash" | "auth" | "onboarding" | "home";
@@ -12,10 +14,12 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("splash");
   const [userName, setUserName] = useState("");
   const [quizPercent, setQuizPercent] = useState<number | null>(null);
+  const [onboarding, setOnboarding] = useState<OnboardingResult | null>(null);
 
   function handleSignOut() {
     setUserName("");
     setQuizPercent(null);
+    setOnboarding(null);
     setPhase("auth");
   }
 
@@ -38,7 +42,8 @@ export default function Home() {
     return (
       <OnboardingFlow
         onFinish={(result) => {
-          setQuizPercent(result ? result.percent : null);
+          setQuizPercent(result.quizPercent);
+          setOnboarding(result);
           setPhase("home");
         }}
       />
@@ -49,6 +54,7 @@ export default function Home() {
     <HomeScreen
       userName={userName}
       quizPercent={quizPercent}
+      onboarding={onboarding}
       onSignOut={handleSignOut}
     />
   );

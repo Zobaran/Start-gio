@@ -3,7 +3,17 @@
 import { useState } from "react";
 
 type PersonaId = "ensino_medio" | "faculdade" | "ja_estagiei";
-type GoalId =
+export type AreaId =
+  | "marketing_comunicacao"
+  | "tecnologia_dados"
+  | "financas_administracao"
+  | "vendas_comercial"
+  | "direito"
+  | "engenharia"
+  | "recursos_humanos"
+  | "design_criacao"
+  | "explorando";
+export type GoalId =
   | "curriculo"
   | "entrevistas"
   | "area"
@@ -76,6 +86,22 @@ const GOAL_OPTIONS: CardOption<GoalId>[] = [
   { id: "ingles", icon: "🗣️", label: "Melhorar meu inglês" },
   { id: "network", icon: "🤝", label: "Aumentar meu network" },
   { id: "vagas", icon: "🔎", label: "Descobrir vagas na minha área" },
+];
+
+export const AREA_OPTIONS: CardOption<AreaId>[] = [
+  { id: "marketing_comunicacao", icon: "📣", label: "Marketing e Comunicação" },
+  { id: "tecnologia_dados", icon: "💻", label: "Tecnologia e Dados" },
+  {
+    id: "financas_administracao",
+    icon: "💰",
+    label: "Finanças e Administração",
+  },
+  { id: "vendas_comercial", icon: "📈", label: "Vendas e Comercial" },
+  { id: "direito", icon: "⚖️", label: "Direito" },
+  { id: "engenharia", icon: "⚙️", label: "Engenharia" },
+  { id: "recursos_humanos", icon: "👥", label: "Recursos Humanos" },
+  { id: "design_criacao", icon: "🎨", label: "Design e Criação" },
+  { id: "explorando", icon: "🧭", label: "Ainda estou explorando" },
 ];
 
 const MULTIPLE_CHOICE_BANK: MultipleChoiceExercise[] = [
@@ -300,8 +326,6 @@ function formatDuration(ms: number): string {
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
-
-const QUIZ_START_STEP = 3;
 
 function ProgressBar({
   stepIndex,
@@ -700,51 +724,114 @@ function PairsExerciseView({
   );
 }
 
-export interface QuizResult {
-  correct: number;
-  total: number;
-  percent: number;
+type Step =
+  | "persona"
+  | "area"
+  | "goal"
+  | "narrow_goal"
+  | "quiz_intro"
+  | "quiz"
+  | "result";
+
+export interface OnboardingResult {
+  quizPercent: number | null;
+  area: AreaId | null;
+  areaLabel: string | null;
+  goal: GoalId | null;
+  customGoal: string;
 }
 
 export default function OnboardingFlow({
   onFinish,
 }: {
-  onFinish: (result: QuizResult | null) => void;
+  onFinish: (result: OnboardingResult) => void;
 }) {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [step, setStep] = useState<Step>("persona");
   const [persona, setPersona] = useState<PersonaId | null>(null);
+  const [area, setArea] = useState<AreaId | null>(null);
   const [selectedGoals, setSelectedGoals] = useState<Set<GoalId>>(new Set());
+  const [narrowedGoal, setNarrowedGoal] = useState<GoalId | null>(null);
   const [customGoal, setCustomGoal] = useState("");
   const [sessionExercises] = useState<Exercise[]>(() =>
     pickSessionExercises(),
   );
+  const [exerciseIndex, setExerciseIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
 
-  const resultStep = QUIZ_START_STEP + sessionExercises.length;
-  const isQuizStep = stepIndex >= QUIZ_START_STEP && stepIndex < resultStep;
-  const exerciseIndex = stepIndex - QUIZ_START_STEP;
-  const currentExercise = isQuizStep
-    ? sessionExercises[exerciseIndex]
-    : null;
+  const hasMultipleGoals = selectedGoals.size > 1;
+  const baseSteps: Step[] = [
+    "persona",
+    "area",
+    "goal",
+    ...(hasMultipleGoals ? (["narrow_goal"] as Step[]) : []),
+    "quiz_intro",
+  ];
+  const total = sessionExercises.length;
+  const quizStartUnit = baseSteps.length;
+  const resultUnit = quizStartUnit + total;
+  const unitIndex =
+    step === "quiz"
+      ? quizStartUnit + exerciseIndex
+      : step === "result"
+        ? resultUnit
+        : baseSteps.indexOf(step);
+
+  const currentExercise = step === "quiz" ? sessionExercises[exerciseIndex] : null;
+  const narrowOptions = GOAL_OPTIONS.filter((option) =>
+    selectedGoals.has(option.id),
+  );
+
+  function resolveGoal(): GoalId | null {
+    if (selectedGoals.size === 1) {
+      const [only] = selectedGoals;
+      return only;
+    }
+    if (selectedGoals.size > 1) {
+      return narrowedGoal;
+    }
+    return null;
+  }
+
+  function finish(quizPercent: number | null) {
+    const areaOption = AREA_OPTIONS.find((option) => option.id === area);
+    onFinish({
+      quizPercent,
+      area,
+      areaLabel: areaOption?.label ?? null,
+      goal: resolveGoal(),
+      customGoal: customGoal.trim(),
+    });
+  }
 
   function handleExerciseComplete(correct: boolean) {
     setScore((s) => s + (correct ? 1 : 0));
     if (exerciseIndex === sessionExercises.length - 1) {
       setEndTime(Date.now());
+      setStep("result");
+    } else {
+      setExerciseIndex((i) => i + 1);
     }
-    setStepIndex((i) => i + 1);
   }
 
   function goBack() {
-    setStepIndex((i) => Math.max(0, i - 1));
+    if (step === "area") setStep("persona");
+    else if (step === "goal") setStep("area");
+    else if (step === "narrow_goal") setStep("goal");
+    else if (step === "quiz_intro")
+      setStep(hasMultipleGoals ? "narrow_goal" : "goal");
+  }
+
+  function continueFromGoal() {
+    setStep(hasMultipleGoals ? "narrow_goal" : "quiz_intro");
   }
 
   function startQuiz() {
     setStartTime(Date.now());
     setEndTime(null);
-    setStepIndex(QUIZ_START_STEP);
+    setExerciseIndex(0);
+    setStep("quiz");
   }
 
   function toggleGoal(id: GoalId) {
@@ -757,26 +844,33 @@ export default function OnboardingFlow({
       }
       return next;
     });
+    setNarrowedGoal(null);
   }
 
   function skipTest() {
-    onFinish(null);
+    finish(null);
   }
 
   function goToOnboardingStart() {
-    setStepIndex(0);
+    setStep("persona");
     setPersona(null);
+    setArea(null);
     setSelectedGoals(new Set());
+    setNarrowedGoal(null);
     setCustomGoal("");
+    setExerciseIndex(0);
     setScore(0);
     setStartTime(null);
     setEndTime(null);
   }
 
-  const showBack = stepIndex === 1 || stepIndex === 2;
-  const canSkipTest = stepIndex >= 2 && stepIndex < resultStep;
+  const showBack =
+    step === "area" ||
+    step === "goal" ||
+    step === "narrow_goal" ||
+    step === "quiz_intro";
+  const canSkipTest = step === "quiz_intro" || step === "quiz";
 
-  const total = sessionExercises.length;
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
   const elapsedMs = startTime && endTime ? endTime - startTime : 0;
 
@@ -798,7 +892,7 @@ export default function OnboardingFlow({
         ) : (
           <div className="w-11 shrink-0" />
         )}
-        <ProgressBar stepIndex={stepIndex} totalSteps={resultStep} />
+        <ProgressBar stepIndex={unitIndex} totalSteps={resultUnit} />
         {canSkipTest && (
           <button
             type="button"
@@ -819,8 +913,8 @@ export default function OnboardingFlow({
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
-        <div key={stepIndex} className="animate-step-in">
-          {stepIndex === 0 && (
+        <div key={step === "quiz" ? `quiz-${exerciseIndex}` : step} className="animate-step-in">
+          {step === "persona" && (
             <section>
               <h1 className="mb-2 text-3xl font-extrabold text-foreground">
                 Quem é você? 👋
@@ -842,10 +936,33 @@ export default function OnboardingFlow({
             </section>
           )}
 
-          {stepIndex === 1 && (
+          {step === "area" && (
             <section>
               <h1 className="mb-2 text-3xl font-extrabold text-foreground">
-                Qual seu objetivo?
+                Qual área você quer trabalhar?
+              </h1>
+              <p className="mb-8 text-navy-muted">
+                Assim a gente te mostra vagas, cursos e dicas mais relevantes
+                para você.
+              </p>
+              <div className="flex flex-col gap-4">
+                {AREA_OPTIONS.map((option) => (
+                  <OptionCard
+                    key={option.id}
+                    icon={option.icon}
+                    label={option.label}
+                    selected={area === option.id}
+                    onClick={() => setArea(option.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {step === "goal" && (
+            <section>
+              <h1 className="mb-2 text-3xl font-extrabold text-foreground">
+                Qual seu objetivo inicial?
               </h1>
               <p className="mb-8 text-navy-muted">
                 Vamos focar no que mais importa pra você agora. Você pode
@@ -881,7 +998,30 @@ export default function OnboardingFlow({
             </section>
           )}
 
-          {stepIndex === 2 && (
+          {step === "narrow_goal" && (
+            <section>
+              <h1 className="mb-2 text-3xl font-extrabold text-foreground">
+                Por onde você quer começar?
+              </h1>
+              <p className="mb-8 text-navy-muted">
+                Você marcou mais de uma opção. Escolha por onde prefere
+                começar — as outras continuam disponíveis depois.
+              </p>
+              <div className="flex flex-col gap-4">
+                {narrowOptions.map((option) => (
+                  <OptionCard
+                    key={option.id}
+                    icon={option.icon}
+                    label={option.label}
+                    selected={narrowedGoal === option.id}
+                    onClick={() => setNarrowedGoal(option.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {step === "quiz_intro" && (
             <section className="text-center">
               <div className="animate-pop-in mb-6 text-7xl">🇺🇸</div>
               <h1 className="mb-4 text-2xl font-extrabold leading-snug text-foreground">
@@ -895,7 +1035,7 @@ export default function OnboardingFlow({
             </section>
           )}
 
-          {isQuizStep && currentExercise && (
+          {step === "quiz" && currentExercise && (
             <div>
               <p className="mb-2 text-sm font-bold uppercase tracking-wide text-orange">
                 {EXERCISE_TYPE_LABEL[currentExercise.type]} ·{" "}
@@ -932,7 +1072,7 @@ export default function OnboardingFlow({
             </div>
           )}
 
-          {stepIndex === resultStep && (
+          {step === "result" && (
             <section className="text-center">
               <div className="animate-pop-in mb-6 text-7xl">🎉</div>
               <h1 className="mb-8 text-3xl font-extrabold text-foreground">
@@ -978,26 +1118,37 @@ export default function OnboardingFlow({
       </main>
 
       <footer className="relative z-10 mx-auto w-full max-w-md px-6 pb-10">
-        {stepIndex === 0 && (
-          <ContinueButton disabled={!persona} onClick={() => setStepIndex(1)}>
+        {step === "persona" && (
+          <ContinueButton disabled={!persona} onClick={() => setStep("area")}>
             Continuar
           </ContinueButton>
         )}
-        {stepIndex === 1 && (
+        {step === "area" && (
+          <ContinueButton disabled={!area} onClick={() => setStep("goal")}>
+            Continuar
+          </ContinueButton>
+        )}
+        {step === "goal" && (
           <ContinueButton
             disabled={selectedGoals.size === 0 && customGoal.trim() === ""}
-            onClick={() => setStepIndex(2)}
+            onClick={continueFromGoal}
           >
             Continuar
           </ContinueButton>
         )}
-        {stepIndex === 2 && (
+        {step === "narrow_goal" && (
+          <ContinueButton
+            disabled={!narrowedGoal}
+            onClick={() => setStep("quiz_intro")}
+          >
+            Continuar
+          </ContinueButton>
+        )}
+        {step === "quiz_intro" && (
           <ContinueButton onClick={startQuiz}>Vamos lá!</ContinueButton>
         )}
-        {stepIndex === resultStep && (
-          <ContinueButton
-            onClick={() => onFinish({ correct: score, total, percent })}
-          >
+        {step === "result" && (
+          <ContinueButton onClick={() => finish(percent)}>
             Começar
           </ContinueButton>
         )}

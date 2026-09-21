@@ -24,10 +24,13 @@ function firstName(fullName: string): string {
   return fullName.trim().split(" ")[0] || fullName.trim();
 }
 
-const QUESTIONS: {
+function buildQuestions(
+  areaLabel?: string | null,
+): {
   key: keyof ResumeData;
   prompt: (answers: Partial<ResumeData>) => string;
-}[] = [
+}[] {
+  return [
   {
     key: "name",
     prompt: () =>
@@ -41,7 +44,9 @@ const QUESTIONS: {
   {
     key: "objective",
     prompt: () =>
-      "Qual é o seu objetivo profissional? (ex: vaga ou área que você busca)",
+      areaLabel
+        ? `Qual é o seu objetivo profissional? Vi que no onboarding você marcou interesse em ${areaLabel} — pode focar nisso ou me contar outro objetivo.`
+        : "Qual é o seu objetivo profissional? (ex: vaga ou área que você busca)",
   },
   {
     key: "experience",
@@ -73,7 +78,8 @@ const QUESTIONS: {
     prompt: () =>
       "Para fechar, escreva uma breve apresentação pessoal sobre você.",
   },
-];
+  ];
+}
 
 function closingMessage(a: Partial<ResumeData>): string {
   return `Perfeito, ${firstName(a.name ?? "")}! Já tenho tudo que preciso para montar seu currículo 🎉`;
@@ -98,9 +104,11 @@ function TypingIndicator() {
 export default function ResumeChatScreen({
   onBack,
   onComplete,
+  areaLabel,
 }: {
   onBack: () => void;
   onComplete: (data: ResumeData) => void;
+  areaLabel?: string | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -109,6 +117,7 @@ export default function ResumeChatScreen({
   const [inputValue, setInputValue] = useState("");
   const [done, setDone] = useState(false);
 
+  const [QUESTIONS] = useState(() => buildQuestions(areaLabel));
   const nextId = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
@@ -130,6 +139,7 @@ export default function ResumeChatScreen({
     if (startedRef.current) return;
     startedRef.current = true;
     pushAiMessage(QUESTIONS[0].prompt({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

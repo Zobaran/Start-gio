@@ -111,9 +111,11 @@ type Stage = "config" | "encouragement" | "live" | "feedback";
 export default function InterviewFlow({
   onLeave,
   onSessionComplete,
+  areaLabel,
 }: {
   onLeave: () => void;
   onSessionComplete?: (score: number) => void;
+  areaLabel?: string | null;
 }) {
   const [stage, setStage] = useState<Stage>("config");
   const [config, setConfig] = useState<InterviewConfig | null>(null);
@@ -124,6 +126,7 @@ export default function InterviewFlow({
     return (
       <InterviewConfigScreen
         initialConfig={config}
+        areaLabel={areaLabel}
         onLeave={onLeave}
         onStart={(nextConfig) => {
           setConfig(nextConfig);
